@@ -8,13 +8,41 @@
 #define OPERATOR_PHASE 2 
 #define EXPRESSION_PHASE 3
 
+
+#define KEYWORD_BUFFER_SIZE 64
+
+
+
 typedef CompilierFlags uint64_t;
 
 void compile_error(unsigned int specifier){
-        printf("compile error %d", specifier);
+        printf("compile error %d: ", specifier);
+
+        switch (specifier){
+            case 2:
+                printf("namespace was too long");
+                break;
+            case 3:
+                printf("string overflow");
+            default:
+                printf("unassigned error")
+        }
+
         exit(1);
 }
 
+
+bool validate_string_integrity(char * given_string, const size_t string_size){
+        //validate_string_integrity -> given_string is iterated through and verified to have a null 
+        //terminator character before the size_t runs out
+        size_t i = 0;
+        bool seen_null = false;
+        for (;!seen_null && string_size != i+1; given_string++){
+            if (*given_string == 0) seen_null = true;
+            i++;
+        }
+        return seen_null;
+}
 
 CompilierFlags set_flag(CompilierFlags cf, unsigned int type, bool on){
     //CompilierFlags -> given a compilier flag data type, will set a certain flag
@@ -53,7 +81,13 @@ ResultType pre_lexer_check(char * filename){
 	
 	//now let's process it word for for word	
     char line_buffer[1024] = {0};
-    char keyword_buffer[64] = {0};
+
+
+    char keyword_buffer[KEYWORD_BUFFER_SIZE] = {0};
+    size_t pos_keyword_buffer = 0;
+
+
+
     CompilierFlags cf = 0;
     set_flag(cf, PRE_WHITESPACE_PHASE, true);
     
@@ -71,6 +105,26 @@ ResultType pre_lexer_check(char * filename){
         
         if (get_flag(cf, KEYWORD_PHASE)){
             
+            //do the opposite check, now we see if the char
+            //is whitespace
+    
+            //append it to keyword_buffer
+            //check buffer size first  
+            if (KEYWORD_BUFFER_SIZE == pos_keyword_buffer) compile_error(2);
+
+            //set the current keyword_buffer_pos to the character we have
+            keyword_buffer[keyword_buffer_pos] = current_char;
+            keyword_buffer_pos++; 
+
+            if (!is_valid_whitespace(current_char)) continue;
+            //if we're here, this means that the current keyword_buffer
+            //is done. first, let's validate it has a nullterm
+            if (!validate_string_integrity(keyword_buffer)) compile_exit(3);
+            
+            
+             
+
+
         }
 
         
